@@ -35,7 +35,7 @@ pd.set_option('display.max_columns', None)
 fullteamDict = {'Tampa Bay Buccaneers':'tam','Buffalo Bills':'buf','Washington Commanders':'was','Washington Redskins':'was','Arizona Cardinals':'crd','Los Angeles Rams':'ram','St. Louis Rams':'ram','Green Bay Packers':'gnb','Dallas Cowboys':'dal','Los Angeles Chargers':'sdg','Oakland Raiders':'rai','San Diego Chargers':'sdg','Baltimore Ravens':'rav', 'Tennessee Titans':'oti', 'Cincinnati Bengals':'cin', 'New Orleans Saints':'nor','Kansas City Chiefs':'kan','Cleveland Browns':'cle','Las Vegas Raiders':'rai','Minnesota Vikings':'min','Indianapolis Colts':'clt','New England Patriots':'nwe','San Francisco 49ers':'sfo','Seattle Seahawks':'sea','Pittsburgh Steelers':'pit','Denver Broncos':'den','Washington Football Team':'was','Atlanta Falcons':'atl','Philadelphia Eagles':'phi', 'Chicago Bears':'chi', 'Carolina Panthers':'car','Miami Dolphins':'mia', 'New York Giants':'nyg', 'Jacksonville Jaguars':'jax','Houston Texans':'htx', 'New York Jets':'nyj', 'Detroit Lions':'det'}
 currentteamDict = {'Tampa Bay Buccaneers':'tam','Buffalo Bills':'buf','Washington Commanders':'was','Arizona Cardinals':'crd','Los Angeles Rams':'ram','Green Bay Packers':'gnb','Dallas Cowboys':'dal','Los Angeles Chargers':'sdg','Oakland Raiders':'rai','Baltimore Ravens':'rav', 'Tennessee Titans':'oti', 'Cincinnati Bengals':'cin', 'New Orleans Saints':'nor','Kansas City Chiefs':'kan','Cleveland Browns':'cle','Las Vegas Raiders':'rai','Minnesota Vikings':'min','Indianapolis Colts':'clt','New England Patriots':'nwe','San Francisco 49ers':'sfo','Seattle Seahawks':'sea','Pittsburgh Steelers':'pit','Denver Broncos':'den','Atlanta Falcons':'atl','Philadelphia Eagles':'phi', 'Chicago Bears':'chi', 'Carolina Panthers':'car','Miami Dolphins':'mia', 'New York Giants':'nyg', 'Jacksonville Jaguars':'jax','Houston Texans':'htx', 'New York Jets':'nyj', 'Detroit Lions':'det'}
 reverseDict = dict((v, k) for k, v in fullteamDict.items())
-teamDict = {'Buccaneers':'tam','Bills':'buf','Cardinals':'crd','Rams':'ram','Packers':'gnb','Cowboys':'dal','Chargers':'sdg','Ravens':'rav', 'Titans':'oti', 'Bengals':'cin', 'Saints':'nor', 'Chiefs':'kan','Browns':'cle', 'Raiders':'rai', 'Vikings':'min','Colts':'clt', 'Patriots':'nwe', 'ers':'sfo','Seahawks':'sea', 'Steelers':'pit','Broncos':'den', 'Washington':'was', 'Commanders':'was','Falcons':'atl','Eagles':'phi', 'Bears':'chi', 'Panthers':'car','Dolphins':'mia', 'Giants':'nyg','Jaguars':'jax','Texans':'htx', 'Jets':'nyj', 'Lions':'det'}
+teamDict = {'Buccaneers':'tam','Bills':'buf','Cardinals':'crd','Rams':'ram','Packers':'gnb','Cowboys':'dal','Chargers':'sdg','Ravens':'rav', 'Titans':'oti', 'Bengals':'cin', 'Saints':'nor', 'Chiefs':'kan','Browns':'cle', 'Raiders':'rai', 'Vikings':'min','Colts':'clt', 'Patriots':'nwe', '49ers':'sfo','Seahawks':'sea', 'Steelers':'pit','Broncos':'den', 'Washington':'was', 'Commanders':'was','Falcons':'atl','Eagles':'phi', 'Bears':'chi', 'Panthers':'car','Dolphins':'mia', 'Giants':'nyg','Jaguars':'jax','Texans':'htx', 'Jets':'nyj', 'Lions':'det'}
 teams = list(set(fullteamDict.values()))
 cols = ['Week','Day','Date','Type','Outcome','Overtime','At','Name','TeamScore','OppScore','PCmp', 'PAtt','PYds', 'PTD', 'Int', 'Sk', 'SkYds', 'PY/A', 'PNY/A', 'Cmp%', 'Rate', 'RAtt','RYds', 'RY/A', 'RTD', 'FGM', 'FGA', 'XPM', 'XPA', 'Pnt', 'PuntYds', '3DConv','3DAtt', '4DConv', '4DAtt', 'ToP']
 oppcols = [i+'_Opp' for i in cols] + ['Home_Opp','Away_Opp','Key']
@@ -99,11 +99,11 @@ def save(df, data_old):
     data = home.merge(away,left_on='Key_Home',right_on='Key_Away')
     datafeats = [i for i in feats if i not in ['Away Odds Close', 'playoff']]
     data = pd.concat([data_old,data]).dropna(subset=datafeats)
-    data.to_csv('nfl.csv')
+    data.to_csv('data/nfl.csv')
 
 def refreshdata(maxdate):
     ''' Puts the above functions together to update the data up to a specified date '''
-    data_old = pd.read_csv('/content/drive/MyDrive/Brayden-Moore-Personal-Projects/NFL-Betting/nfl.csv',index_col=0)
+    data_old = pd.read_csv('data/nfl.csv',index_col=0)
     data_old['KeyDate'] = pd.to_datetime(data_old['Key_Home'].str[:10])
     dropteams = list(set([i[10:13] for i in data_old[data_old['KeyDate']>=maxdate]['Key_Home']]))
     dropteams += (list(set([i[13:] for i in data_old[data_old['KeyDate']>=maxdate]['Key_Home']])))
@@ -144,7 +144,7 @@ def refreshdata(maxdate):
 
         # merging with historical odds data
 
-        data = pd.read_csv('/content/drive/MyDrive/Brayden-Moore-Personal-Projects/NFL-Betting/nfl.csv',index_col=0)
+        data = pd.read_csv('data/nfl.csv',index_col=0)
         elodata = pd.read_csv('https://projects.fivethirtyeight.com/nfl-api/nfl_elo.csv')
 
         # loading gambling data
@@ -177,7 +177,7 @@ def refreshdata(maxdate):
         elodata['playoff'] = elodata['playoff'].map({'w':1,'d':1,'c':1,'s':1}).fillna(0)
         data = elodata.merge(data, left_on='Key',right_on='Key_Home').dropna(subset=feats).drop_duplicates(subset='Key')
         data['playoff'] = [0 if i == 0 else 1 for i in data['playoff']]
-        data.to_csv('data.csv')
+        data.to_csv('data/data.csv')
     
 def interp(mislist,awayorhome):
     if awayorhome=='away':
@@ -203,7 +203,7 @@ def interp(mislist,awayorhome):
 def train():
     ''' Trains the model and predicts on the last 4 seasons '''
     # loading 
-    data = pd.read_csv('/content/drive/MyDrive/Brayden-Moore-Personal-Projects/NFL-Betting/data.csv',index_col=0)
+    data = pd.read_csv('data/data.csv',index_col=0)
 
     # splitting
     splitdata = data#[data['playoff']==0]
@@ -294,7 +294,7 @@ def showmodel():
 
 def getstats(away,home,date):
     ''' Gets necessary data for given matchup '''
-    df = pd.read_csv('/content/drive/MyDrive/Brayden-Moore-Personal-Projects/NFL-Betting/nfl.csv',index_col=0).drop_duplicates(subset=['Key_Home'])
+    df = pd.read_csv('data/nfl.csv',index_col=0).drop_duplicates(subset=['Key_Home'])
     key = date + home + away
     df = df[df['Key_Home'] == key]
 
@@ -337,19 +337,19 @@ def predict(awayodds,homeodds,data,scaler,clf):
     return [awayprob, homeprob, awayev, homeev, implied, mismatch, rec, recprob, maxev]
 
 
-def bet(games):
+def bet(games=[['Bills','Jets',-475,360,'2022-11-06']]):
     ''' Gives detailed output of predictions '''
     clf, scaler, testdata, bets = train()
     for i in tqdm(games): 
-        i.append(predict(i[2],i[3],getstats(i[0],i[1],i[4]),scaler,clf))
-
-    # displaying
+        away = teamDict[i[0]]
+        home = teamDict[i[1]]
+        i.append(predict(i[2],i[3],getstats(away,home,i[4]),scaler,clf))
 
     rec = pd.DataFrame(games)
     rec[list(range(5,5+len(rec.loc[0,5])))] = rec[5].apply(pd.Series)
     rec.columns =  ['Away','Home','Away Odds','Home Odds','Date','Away Win Prob','Home Win Prob','Away EV','Home EV','Their Implied Win Probability','Classifier Difference','Better Value Team','Their Win Probability','Their EV']
-    rec['Away'] = rec['Away'].map(reverseDict)
-    rec['Home'] = rec['Home'].map(reverseDict)
+    #rec['Away'] = rec['Away'].map(reverseDict)
+    #rec['Home'] = rec['Home'].map(reverseDict)
     rec['Bet On'] = [bvt if ev>evthresh else '' for bvt,ev in zip(rec['Better Value Team'],rec['Their EV'])]
     rec.insert(loc=7, column='|', value=['|' for i in range(rec.shape[0])])
 
